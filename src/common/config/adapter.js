@@ -1,9 +1,13 @@
 const fileCache = require('think-cache-file');
 const {Console, File, DateFile} = require('think-logger3');
 const path = require('path');
-const database = require('./database.js');
-const datashop = require('./datashop');
-const datavote = require('./datavote.js');
+const database = require('./db/database.js');
+const datashop = require('./db/datashop.js');
+const datavote = require('./db/datavote.js');
+const zhongshan = require('./db/zhongshan.js');
+const nanping = require('./db/nanping.js');
+const yishu = require('./db/yishu.js');
+const fuzhou = require('./db/fuzhou.js');
 const isDev = think.env === 'development';
 
 /**
@@ -36,7 +40,11 @@ exports.model = {
   },
   mysql: database,
   shop: datashop,
-  vote: datavote
+  vote: datavote,
+  zsvote: zhongshan,
+  npvote: nanping,
+  ysvote: yishu,
+  fzvote: fuzhou
 };
 
 /**

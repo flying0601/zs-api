@@ -9,6 +9,8 @@ module.exports = {
     'wechat',
     'upload',
     'url',
+    'system',
+    'host',
     'course/order',
     'vote/index',
     'vote/old'
@@ -17,6 +19,7 @@ module.exports = {
   // 可以公开访问的Action
   publicAction: [
     // 格式为： controller+action
-    'pay/notify'
+    'pay/notify',
+    'user/updUserNum'
   ]
 };

@@ -19,7 +19,7 @@ module.exports = class extends Base {
   async getRolesAction() {
     const admin = this.model('admin');
     // const data = await admin.field(['username AS a_key', 'id AS c_id', 'roles', 'description']['id', 'username', 'roles', 'description']).page(this.get('page') || 1, this.get('size') || 10).countSelect();
-    const data = await admin.field(['id', 'username', 'roles', 'description']).page(this.get('page') || 1, this.get('size') || 10).countSelect();
+    const data = await admin.field(['id', 'username', 'roles', 'description', 'password']).page(this.get('page') || 1, this.get('size') || 10).countSelect();
     const allRoles = data.data;
     allRoles.forEach(item => {
       item.key = item.username;
@@ -50,8 +50,12 @@ module.exports = class extends Base {
     const roles = this.post('roles');
     const username = this.post('username');
     const description = this.post('description');
+    const password = this.post('password');
+    const salt = Math.ceil(Math.random() * 100);
     const datas = await this.model('admin').add({
       username: username,
+      password: think.md5(password + '' + salt),
+      password_salt: salt,
       roles: roles,
       description: description
     });

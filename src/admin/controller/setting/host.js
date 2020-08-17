@@ -4,7 +4,7 @@ module.exports = class extends Base {
   // 域名配置接口
   async listAction() {
     const userId = this.getLoginUserId();
-    const list = await this.model('host').where({user_id: userId}).select();
+    const list = await this.model('host').where({user_id: userId}).order({use: 'asc'}).select();
     const host = [];
     const file = [];
     for (const item of list) {
@@ -43,6 +43,7 @@ module.exports = class extends Base {
       wechat: wechat,
       remake: remake,
       user_id: this.getLoginUserId(),
+      sys_id: sysInfo.id,
       sign: 0
     });
     return this.success(data, '添加成功');
@@ -93,8 +94,13 @@ module.exports = class extends Base {
     const data = [];
     for (const item of list) {
       if (item.host) {
-        const wechat = await getBtsdk.getHoststate(item.host);
-        if (wechat.code !== 200) {
+        let wechat;
+        if (item.use === 1) {
+          wechat = await getBtsdk.getHoststate(item.host + '/vt/main.html');
+        } else {
+          wechat = await getBtsdk.getHoststate(item.host + '/vt/');
+        }
+        if (wechat.code === 201) {
           await this.model('host').where({id: item.id}).update({
             wechat: wechat.msg,
             state: 0
@@ -110,6 +116,7 @@ module.exports = class extends Base {
     }
     return this.success(data, '检测成功');
   }
+
   async wechatTestAction() {
     const imageFile = this.file('wechatTxt');
     const state = this.post('state') || 1;

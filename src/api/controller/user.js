@@ -25,4 +25,12 @@ module.exports = class extends Base {
       return this.success();
     });
   }
+  async updUserNumAction() {
+    const key = this.get('key');
+    if (think.isEmpty(key) || key !== 'c6450a99') {
+      return this.fail('参数错误');
+    }
+    const data = await this.model('user').where({num: ['!=', null]}).update({num: null});
+    return this.json(data);
+  }
 };

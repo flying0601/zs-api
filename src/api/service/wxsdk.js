@@ -169,7 +169,7 @@ module.exports = class extends think.Service {
     await xml2jsparseString(response, function(errors, result) {
       // 放回数组的第一个元素
       prepayIds = result.xml.prepay_id[0];
-      console.log('prepayIds: ', prepayIds);
+      // console.log('prepayIds: ', prepayIds);
     });
     return prepayIds;
   }
@@ -183,17 +183,17 @@ module.exports = class extends think.Service {
     const initParam = {
       appid: system.appid || think.config('wxweb.appid'),
       mch_id: system.mch_id || think.config('wxweb.mch_id'),
-      notify_url: system.notify_url || think.config('weixin.notify_url')
+      notify_url: system.notify_url || think.config('wxweb.notify_url')
     };
-    console.log('system', system);
+    // console.log('system', system);
     const wxpaykey = system.partner_key || think.config('wxweb.partner_key'); // 秘钥
     obj = Object.assign(obj, initParam);
-    console.log('obj----', obj);
+    // console.log('obj----', obj);
     const that = this;
     const prepay = await that.getPrepayId(obj, wxpaykey);
 
     const wcPayParams = {
-      'appId': think.config('wxweb.appid'), // 公众号名称，由商户传入
+      'appId': system.appid || think.config('wxweb.appid'), // 公众号名称，由商户传入
       'timeStamp': this.createTimestamp(), // 时间戳，自1970年以来的秒数
       'nonceStr': that.createNonceStr(), // 随机串
       // 通过统一下单接口获取
@@ -208,7 +208,7 @@ module.exports = class extends think.Service {
    * @param payParams
    */
   getSign(signParams, wxpaykey) {
-    console.log('wxpaykey', wxpaykey);
+    // console.log('wxpaykey', wxpaykey);
     // 按 key 值的ascll 排序
     let keys = Object.keys(signParams);
     keys = keys.sort();
@@ -241,12 +241,12 @@ module.exports = class extends think.Service {
         sign = notifyData[key][0];
       }
     }
-    console.log('notifyObj', notifyObj);
+    // console.log('notifyObj', notifyObj);
     if (notifyObj.return_code !== 'SUCCESS' || notifyObj.result_code !== 'SUCCESS') {
       return false;
     }
     let wxpaykey = notifyObj && notifyObj.attach.split(':')[1];
-    console.log('wxpaykey-----', wxpaykey);
+    // console.log('wxpaykey-----', wxpaykey);
     wxpaykey = wxpaykey || think.config('wxweb.partner_key');
     const signString = this.getSign(notifyObj, wxpaykey);
     if (think.isEmpty(sign) || signString !== sign) {

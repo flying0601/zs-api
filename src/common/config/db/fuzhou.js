@@ -2,12 +2,12 @@ const mysql = require('think-model-mysql');
 
 module.exports = {
   handle: mysql,
-  database: 'start-zs',
+  database: 'vote1',
   prefix: 'wechat_',
   encoding: 'utf8mb4',
-  host: '127.0.0.1',
+  host: '114.215.84.92',
   port: '3306',
-  user: 'root',
-  password: 'root',
+  user: 'vote1',
+  password: 'rmHXwzh5TMBDRYbs',
   dateStrings: true
 };

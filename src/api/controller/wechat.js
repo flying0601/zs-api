@@ -14,18 +14,21 @@ module.exports = class extends Base {
     const link = this.get('url') || this.post('url');
     const sysId = this.cookie('sysid');
     const system = await this.model('system').getSystem(sysId);
+    // 分享域名
+    const host = await this.model('host').where({sys_id: sysId, use: 4, state: 1}).select();
     const appid = system.appid || think.config('wxweb.appid');
     const secret = system.secret || think.config('wxweb.secret');
     const WeixinConfig = this.service('wxsdk', 'api');
     // await this.cache('token', null);
     // await this.cache('ticket', null);
-    let tokenObj = await this.cache('token');
-    let ticketObj = await this.cache('ticket');
+    let tokenObj = await this.cache(`token${appid}`);
+    console.log(`token${appid}`, tokenObj);
+    let ticketObj = await this.cache(`ticket${appid}`);
     let res = null;
     if (!tokenObj) {
       tokenObj = await WeixinConfig.getToken(appid, secret);
       // 设置缓存token
-      await this.cache('token', tokenObj, {
+      await this.cache(`token${appid}`, tokenObj, {
         timeout: tokenObj.expires_in * 1000
       });
     }
@@ -34,13 +37,13 @@ module.exports = class extends Base {
       if (!ticketObj) {
         ticketObj = await WeixinConfig.getTicket(tokenObj);
         // 设置缓存jsapiTicket
-        await this.cache('ticket', ticketObj, {
+        await this.cache(`ticket${appid}`, ticketObj, {
           timeout: ticketObj.expires_in * 1000
         });
       }
       // 计算signature
       const getSign = await WeixinConfig.sign(ticketObj.ticket, link);
-      res = Object.assign({appId: appid}, getSign);
+      res = Object.assign({appId: appid}, getSign, {host: host});
       return this.success(res);
     } else {
       res = tokenObj;
@@ -58,7 +61,7 @@ module.exports = class extends Base {
     this.cache('callback', callback);
     // 微信网页授权地址
     const authorizeUrl = `https://open.weixin.qq.com/connect/oauth2/authorize?appid=${appid}&redirect_uri=${callback}&response_type=code&scope=${scope}&state=STATE#wechat_redirect`;
-    console.log('authorizeUrl: ', authorizeUrl);
+    // console.log('authorizeUrl: ', authorizeUrl);
     // 重定向到该地址
     this.success(authorizeUrl);
     // const a = 'https://www.baidu.com';
@@ -83,7 +86,8 @@ module.exports = class extends Base {
       userId = await this.model('user').add({
         username: '微信用户' + think.uuid(6),
         register_ip: clientIp,
-        num: 0,
+        weixin_openid: AccessToken.openid,
+        sysid: sysId,
         sign: 1
       });
     } else {
@@ -91,7 +95,8 @@ module.exports = class extends Base {
         id: userId
       }).update({
         last_login_time: this.getTime(),
-        last_login_ip: clientIp
+        last_login_ip: clientIp,
+        sysid: sysId
       });
     }
     AccessToken.userId = userId;
