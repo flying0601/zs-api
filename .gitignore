@@ -41,3 +41,4 @@ config.development.js
 adapter.development.js
 .vscode/
 /.vscode/settings.json
+src/common/config/db

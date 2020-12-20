@@ -88,7 +88,8 @@ module.exports = class extends Base {
         register_ip: clientIp,
         weixin_openid: AccessToken.openid,
         sysid: sysId,
-        sign: 1
+        sign: 1,
+        register_time: this.getTime()
       });
     } else {
       await this.model('user').where({

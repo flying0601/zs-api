@@ -1,16 +1,30 @@
 const fly = require('flyio');
 const nodemailer = require('nodemailer');
+// const rp = require('request-promise');
 module.exports = class extends think.Service {
   // 域名检测
   async getHoststate(host) {
-    const url = `http://apicheck.i-active.cn/api/wx?domain=${host}`;
+    // const url = `http://apicheck.i-active.cn/api/wx?domain=${host}`;
+    const url = `http://127.0.0.1:1234/api/vx?url=${host}&token=bb760e66a5e5faa309f4931ff64776b1`;
     const data = await fly.get(url).then(params => {
+      console.log('params: ', params.data);
       if (params.data) {
         return params.data;
       }
     }).catch(error => {
       return error;
     });
+    /*  const options = {
+      method: 'GET',
+      url: 'http://jzcheck.i-active.cn/api/vx',
+      qs: {
+        url: host,
+        token: '640bb291b8d1903792c0538136359779'
+      }
+    };
+    let res = await rp(options);
+    console.log('res: ', res);
+    res = res ? JSON.parse(res) : {}; */
     return data;
   }
   // 发邮件

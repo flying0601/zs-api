@@ -1,13 +1,17 @@
 const fileCache = require('think-cache-file');
-const {Console, File, DateFile} = require('think-logger3');
+const { Console, File, DateFile } = require('think-logger3');
 const path = require('path');
 const database = require('./db/database.js');
 const datashop = require('./db/datashop.js');
 const datavote = require('./db/datavote.js');
-const zhongshan = require('./db/zhongshan.js');
-const nanping = require('./db/nanping.js');
-const yishu = require('./db/yishu.js');
-const fuzhou = require('./db/fuzhou.js');
+// const zhongshan = require('./db/zhongshan.js');
+// const nanping = require('./db/nanping.js');
+// const yishu = require('./db/yishu.js');
+// const fuzhou = require('./db/fuzhou.js');
+// const newzs = require('./db/newzs.js');
+// const sylm = require('./db/sylm.js');
+// const gtsylm = require('./db/gtsylm');
+
 const isDev = think.env === 'development';
 
 /**
@@ -40,11 +44,14 @@ exports.model = {
   },
   mysql: database,
   shop: datashop,
-  vote: datavote,
-  zsvote: zhongshan,
-  npvote: nanping,
-  ysvote: yishu,
-  fzvote: fuzhou
+  vote: datavote
+  // zsvote: zhongshan,
+  // npvote: nanping,
+  // ysvote: yishu,
+  // fzvote: fuzhou,
+  // newzs: newzs,
+  // smvote: sylm,
+  // gtsylm: gtsylm
 };
 
 /**

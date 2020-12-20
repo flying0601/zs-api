@@ -2,8 +2,8 @@
  * @Descripttion:
  * @Author: ylf
  * @Date: 2020-06-22 11:22:56
- * @LastEditors: ylf
- * @LastEditTime: 2020-08-16 20:05:53
+ * @LastEditors: Please set LastEditors
+ * @LastEditTime: 2020-12-20 13:51:34
  */
 const Base = require('../base.js');
 const { think } = require('thinkjs');
@@ -22,12 +22,12 @@ module.exports = class extends Base {
       return this.fail('活动不存在');
     }
     const model = this.model('giftvote', system.dbkey);
-    const data = await model.where({id: id}).find();
+    const data = await model.where({ id: id }).find();
     const VoteConfig = this.service('vote', 'api');
     data.config = await VoteConfig.swapConfig(data.config);
     data.topimg = await VoteConfig.swapConfig(data.topimg);
     data.giftdata = await VoteConfig.swapConfig(data.giftdata);
-    data.pvv = await model.where({id: id}).increment('pv', 1);
+    data.pvv = await model.where({ id: id }).increment('pv', 1);
     return this.success(data);
   }
   /**
@@ -54,9 +54,19 @@ module.exports = class extends Base {
     // const player = await model.where({pid: pid}).order({votenum: 'asc'}).page(page, size).countSelect();
     let player;
     if (noid) {
-      player = await model.where({pid: pid, status: status, noid: ['=', noid]}).order(`${orderParam}`).page(page, size).countSelect();
+      player = await model
+        .fieldReverse('pid,tel,giftcount,allowvote,addpiao,createtime,lastvotetime,locktime,sharecount,status,pvcount,vheat,user_id,comment')
+        .where({ pid: pid, status: status, noid: ['=', noid] })
+        .order(`${orderParam}`)
+        .page(page, size)
+        .countSelect();
     } else {
-      player = await model.where({pid: pid, status: status, name: ['like', `%${name}%`]}).order(`${orderParam}`).page(page, size).countSelect();
+      player = await model
+        .fieldReverse('pid,tel,giftcount,allowvote,addpiao,createtime,lastvotetime,locktime,sharecount,status,pvcount,vheat,user_id,comment')
+        .where({ pid: pid, status: status, name: ['like', `%${name}%`] })
+        .order(`${orderParam}`)
+        .page(page, size)
+        .countSelect();
     }
     return this.success(player);
   }
@@ -74,13 +84,19 @@ module.exports = class extends Base {
     const model = this.model('giftvote_item', system.dbkey);
     let data;
     if (openid) {
-      data = await model.where({openid: openid, pid: pid}).find();
+      data = await model
+        .fieldReverse('pid,tel,giftcount,allowvote,addpiao,createtime,lastvotetime,locktime,sharecount,status,pvcount,vheat,user_id,comment')
+        .where({ openid: openid, pid: pid })
+        .find();
     } else {
       if (think.isEmpty(id)) {
         return this.fail('选手不存在');
       }
-      data = await model.where({id: id}).find();
-      data.pvv = await model.where({id: id}).increment('pvcount', 1);
+      data = await model
+        .fieldReverse('pid,tel,giftcount,allowvote,addpiao,createtime,lastvotetime,locktime,sharecount,status,pvcount,vheat,user_id,comment')
+        .where({ id: id })
+        .find();
+      data.pvv = await model.where({ id: id }).increment('pvcount', 1);
     }
     return this.success(data);
   }
@@ -94,14 +110,13 @@ module.exports = class extends Base {
     const sysId = this.cookie('sysid');
     const system = await this.model('system').getSystem(sysId);
     const model = this.model('giftvote_item', system.dbkey);
-    const pvcount = await model.where({pid: vid}).sum('pvcount');
-    const votenum = await model.where({pid: vid}).sum('votenum');
-    const playernum = await model.where({pid: vid}).count('pid');
+    const pvcount = await model.where({ pid: vid }).sum('pvcount');
+    const votenum = await model.where({ pid: vid }).sum('votenum');
+    const playernum = await model.where({ pid: vid }).count('pid');
     const data = {
       pvcount: pvcount,
       votenum: votenum,
       playernum: playernum
-
     };
     return this.success(data);
   }
@@ -131,7 +146,7 @@ module.exports = class extends Base {
     let formObj = this.post('formObj');
     const system = await this.model('system').getSystem(sysId);
     const model = this.model('giftvote_item', system.dbkey);
-    const noidMax = await model.where({pid: pid}).max('noid') || 0;
+    const noidMax = (await model.where({ pid: pid }).max('noid')) || 0;
     imglist = JSON.parse(imglist);
     formObj = JSON.parse(formObj);
     const imgObj = {};
@@ -147,6 +162,7 @@ module.exports = class extends Base {
       name: formObj.name,
       tel: formObj.tel,
       introduction: formObj.introduction,
+      giftcount: 0.0,
       status: ischecked,
       createtime: this.getTime()
     };
@@ -166,26 +182,40 @@ module.exports = class extends Base {
     const userId = this.post('userid');
     const userIp = this.ctx.ip;
     const openid = this.cookie('openid');
+    const userAgent = this.ctx.userAgent.toLowerCase();
+    if (!userAgent.includes('micromessenger')) {
+      return this.fail(1003, 'no done no dieua!');
+    }
     // 系统信息
     const system = await this.model('system').getSystem(sysId);
     // vote配置
     const configModel = this.model('giftvote', system.dbkey);
-    const configData = await configModel.field(['config', 'voteendtime', 'status']).where({id: pid}).find();
+    const configData = await configModel
+      .field(['config', 'voteendtime', 'status'])
+      .where({ id: pid })
+      .find();
     // 活动是否投票时间
-    const {voteendtime, status} = configData;
+    const { voteendtime, status } = configData;
     const curTime = this.getTime();
-    if ((curTime > voteendtime) || (parseInt(status) === 0)) {
+    if (curTime > voteendtime || parseInt(status) === 0) {
       return this.fail('活动已经结束了');
     }
     const VoteConfig = this.service('vote', 'api');
     configData.config = await VoteConfig.swapConfig(configData.config);
     const dailyvote = configData.config.dailyvote || 0;
-    let user;// 用户信息
+    const jgtime = Number(configData.config.jgtime) || 0;
+    let user; // 用户信息
     let userNum = 0;
     if (dailyvote !== 0) {
-      user = await this.model('user').field('num').where({
-        weixin_openid: openid
-      }).find();
+      user = await this.model('user')
+        .field('num')
+        .where({
+          weixin_openid: openid
+        })
+        .find();
+      if (user && Object.keys(user).length === 0) {
+        return this.fail(1004, 'no done no die!');
+      }
       if (user && user.num) {
         user.num = JSON.parse(user.num);
         userNum = (user.num[`sys${sysId}`] && user.num[`sys${sysId}`][`vid${pid}`]) || 0;
@@ -197,17 +227,34 @@ module.exports = class extends Base {
       }
     }
     const model = this.model('giftvote_item', system.dbkey);
-    const itmeData = await model.field(['locktime', 'allowvote']).where({id: did}).find();
-    const lock = (this.getTime()) - (itmeData.locktime);
+    const itmeData = await model
+      .field(['locktime', 'allowvote'])
+      .where({ id: did })
+      .find();
+    const lock = this.getTime() - itmeData.locktime;
     if (lock < 0) {
-      return this.fail(1001, '选手异常被锁定', lock);
+      return this.fail(1001, '选手异常被锁定', parseInt(lock / 60));
     }
     if (!itmeData.allowvote) {
       return this.fail(1002, '选手异常被禁止');
     }
-    const data = await model.where({id: did}).increment(['votenum', 'pvcount'], 1);
+    const record = this.model('giftvote_record', system.dbkey);
+    // 间隔时间判断
+    if (jgtime !== 0) {
+      const voteTime = await record
+        .where({
+          openid: openid
+        })
+        .max('createtime');
+      if (voteTime) {
+        const curjgTime = voteTime + jgtime * 60 - this.getTime();
+        if (curjgTime > 0) {
+          return this.fail(1003, `期待您${parseInt(curjgTime / 60)}分钟后再一次投票！`);
+        }
+      }
+    }
     // 添加投票记录
-    await this.model('giftvote_record', system.dbkey).add({
+    await record.add({
       tid: did,
       pid: pid,
       user_id: userId,
@@ -215,6 +262,8 @@ module.exports = class extends Base {
       user_ip: userIp,
       createtime: this.getTime()
     });
+    // 浏览量添加
+    const data = await model.where({ id: did }).increment(['votenum', 'pvcount'], 1);
     // 投票计数
     if (userNum === 0) {
       if (!user.num) {
@@ -231,7 +280,9 @@ module.exports = class extends Base {
     // console.log(user);
     user.num = JSON.stringify(user.num);
     // console.log('ddd', user.num);
-    await this.model('user').where({ weixin_openid: openid }).update({'num': user.num});
+    await this.model('user')
+      .where({ weixin_openid: openid })
+      .update({ num: user.num });
     return this.success(data);
   }
   /**
@@ -276,9 +327,11 @@ module.exports = class extends Base {
     }
     const system = await this.model('system').getSystem(sysId);
     const data = {};
-    const testId = await this.model('giftvote_jubao', system.dbkey).where({
-      ip: clientIp
-    }).getField('id', true);
+    const testId = await this.model('giftvote_jubao', system.dbkey)
+      .where({
+        ip: clientIp
+      })
+      .getField('id', true);
     data.testId = testId;
     data.appid = system.appid;
     this.success(data);
@@ -300,7 +353,8 @@ module.exports = class extends Base {
     const sysId = this.cookie('sysid');
     const timeStamp = this.post('timeStamp');
     const nonceStr = this.post('nonceStr');
-    const body = this.post('body');
+    let body = this.post('body');
+    body = body.replace(/\s*/g, '');
     if (think.isEmpty(tid)) {
       return this.fail('选手不存在');
     }
@@ -337,16 +391,19 @@ module.exports = class extends Base {
     }
     const WeixinSerivce = this.service('wxsdk', 'api');
     try {
-      const returnParams = await WeixinSerivce.getBrandWCPayParams({
-        openid: openid,
-        timeStamp: timeStamp,
-        nonceStr: nonceStr,
-        attach: system.dbkey + ':' + system.partner_key,
-        body: body || system.name + ':' + giftInfo.uniontid,
-        out_trade_no: giftInfo.uniontid,
-        total_fee: parseInt(giftInfo.fee * 100),
-        spbill_create_ip: giftInfo.user_ip
-      }, system);
+      const returnParams = await WeixinSerivce.getBrandWCPayParams(
+        {
+          openid: openid,
+          timeStamp: timeStamp,
+          nonceStr: nonceStr,
+          attach: system.dbkey + ':' + system.partner_key,
+          body: body || system.name + ':' + giftInfo.uniontid,
+          out_trade_no: giftInfo.uniontid,
+          total_fee: parseInt(giftInfo.fee * 100),
+          spbill_create_ip: giftInfo.user_ip
+        },
+        system
+      );
       return this.success(returnParams);
     } catch (err) {
       return this.fail('微信支付失败');
@@ -363,10 +420,10 @@ module.exports = class extends Base {
     let data, model;
     if (did) {
       model = this.model('giftvote_item', system.dbkey);
-      data = await model.where({id: did}).increment('sharecount', 1);
+      data = await model.where({ id: did }).increment('sharecount', 1);
     } else {
       model = this.model('giftvote', system.dbkey);
-      data = await model.where({id: id}).increment('sharecount', 1);
+      data = await model.where({ id: id }).increment('sharecount', 1);
     }
     return this.success(data);
   }
@@ -377,33 +434,38 @@ module.exports = class extends Base {
   async notifyAction() {
     const WeixinSerivce = this.service('wxsdk', 'api');
     const result = WeixinSerivce.payNotify(this.post('xml'));
+    console.log('xml', result);
+    this.ctx.res.setHeader('Content-Type', 'application/xml');
     if (!result) {
-      return `<xml><return_code><![CDATA[FAIL]]></return_code><return_msg><![CDATA[支付失败]]></return_msg></xml>`;
+      return this.ctx.res.end(`<xml><return_code><![CDATA[FAIL]]></return_code><return_msg><![CDATA[支付失败]]></return_msg></xml>`);
     }
     const dbkey = result && result.attach.split(':')[0];
     const model = this.model('giftvote_gift', dbkey);
-    const isGift = await model.where({
-      uniontid: result.out_trade_no
-    }).find();
+    const isGift = await model
+      .where({
+        uniontid: result.out_trade_no
+      })
+      .find();
     if (think.isEmpty(isGift)) {
-      return `<xml><return_code><![CDATA[FAIL]]></return_code><return_msg><![CDATA[订单不存在]]></return_msg></xml>`;
+      return this.ctx.res.end(`<xml><return_code><![CDATA[FAIL]]></return_code><return_msg><![CDATA[订单不存在]]></return_msg></xml>`);
     }
     if (isGift.ispay === 1) {
-      return `<xml><return_code><![CDATA[FAIL]]></return_code><return_msg><![CDATA[订单已支付]]></return_msg></xml>`;
+      return this.ctx.res.end(`<xml><return_code><![CDATA[SUCCESS]]></return_code><return_msg><![CDATA[OK]]></return_msg></xml>`);
     }
-    // 加票
+    // 加数
     const num = parseInt(isGift.giftvote) || 1;
     const modelItem = this.model('giftvote_item', dbkey);
-
-    await modelItem.where({id: isGift.tid}).increment({votenum: num, pvcount: num, giftcount: isGift.fee});
+    await modelItem.where({ id: isGift.tid }).increment({ votenum: num, pvcount: num, giftcount: isGift.fee });
     // await modelItem.where({id: isGift.tid}).increment(['votenum', 'pvcount'], num);
     // 更新状态
-    await model.where({
-      uniontid: result.out_trade_no
-    }).update({
-      ispay: 1,
-      transaction_id: result.transaction_id
-    });
-    return `<xml><return_code><![CDATA[SUCCESS]]></return_code><return_msg><![CDATA[OK]]></return_msg></xml>`;
+    await model
+      .where({
+        uniontid: result.out_trade_no
+      })
+      .update({
+        ispay: 1,
+        transaction_id: result.transaction_id
+      });
+    return this.ctx.res.end(`<xml><return_code><![CDATA[SUCCESS]]></return_code><return_msg><![CDATA[OK]]></return_msg></xml>`);
   }
 };

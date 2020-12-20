@@ -13,7 +13,8 @@ module.exports = {
     'host',
     'course/order',
     'vote/index',
-    'vote/old'
+    'vote/old',
+    'vote/v1'
   ],
 
   // 可以公开访问的Action

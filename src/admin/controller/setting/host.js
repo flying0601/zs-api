@@ -90,6 +90,7 @@ module.exports = class extends Base {
   async wechatHostAction() {
     const userId = this.getLoginUserId();
     const list = await this.model('host').where({user_id: userId, sign: 0}).select();
+    console.log('list: ', list);
     const getBtsdk = this.service('btsdk', 'admin');
     const data = [];
     for (const item of list) {
@@ -100,14 +101,15 @@ module.exports = class extends Base {
         } else {
           wechat = await getBtsdk.getHoststate(item.host + '/vt/');
         }
-        if (wechat.code === 201) {
+        console.log(item.id, wechat);
+        if (wechat && wechat.code === 201) {
           await this.model('host').where({id: item.id}).update({
-            wechat: wechat.msg,
+            wechat: wechat && wechat.msg,
             state: 0
           });
         } else {
           await this.model('host').where({id: item.id}).update({
-            wechat: wechat.msg
+            wechat: wechat && wechat.msg
           });
         }
         item.wechat = wechat.msg;
